@@ -20,4 +20,5 @@ if ! python -c "import requests" &>/dev/null; then
 fi
 
 # run script
-python scrape.py
+python interact.py
+
