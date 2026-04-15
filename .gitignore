@@ -32,7 +32,6 @@ Thumbs.db
 .ipynb_checkpoints/
 
 # Output files (your scraper output)
-*.json
 *.csv
 
 # Misc
