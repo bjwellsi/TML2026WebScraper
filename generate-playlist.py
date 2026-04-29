@@ -2,9 +2,11 @@ import os
 import requests
 import json
 
+spotify_base_url = "https://api.spotify.com/v1"
+client_id = os.environ['SPOTIFY_CLIENT_ID']
+client_secret = os.environ['SPOTIFY_CLIENT_SECRET']
+
 def get_access_token():
-    client_id = os.environ['SPOTIFY_CLIENT_ID']
-    client_secret = os.environ['SPOTIFY_CLIENT_SECRET']
 
     auth_url = 'https://accounts.spotify.com/api/token'
     auth_headers = {'Content-Type': 'application/x-www-form-urlencoded'}
@@ -20,7 +22,7 @@ def get_access_token():
 def get_artist_top_song_ids(artist_id):
     access_token = get_access_token()
 
-    url = "https://api.spotify.com/v1/artists?"
+    url = spotify_base_url + "/artists?"
     resp = requests.get(url, headers = {"Authorization": "Bearer  " + access_token})
     songs = None
     if resp.status_code = 200:
@@ -56,15 +58,30 @@ def retrieve_artist_id_list():
         return artist_ids
     return
 
-def generate_song_list():
+def generate_song_list(playlist_id, playlist_name, playlist_desc):
+    if playlist_id is None and playlist_name is None:
+        return
+
     artists = retrieve_artist_id_list() 
     songs = []
     for id in artists:
         artist_songs = get_artist_top_song_ids(artist_id)
         songs.extend(artist_songs)
 
-    #TODO now actually make the playlist
-    print songs
+    if playlist_id is None:
+        #make a new playlist
+        req_url = spotify_base_url + "/me/playlists"
+        #TODO auth flow
+        resp = requests.post(req_url, data = {"name": playlist_name, "description": playlist_desc}, headers = {"jk"}) 
+        if resp.status_code = 200:
+            playlist_id = resp.data["id"]
+
+    append_url = spotify_base_url + "/playlists" + playlist_id + "/items"
+    for song in songs:
+        #TODO auth flow
+        resp = requests.post(append_url + "?uris=spotify%3Atrack%3A" + song_id, data = {}, headers = {})
+
+    return playlist_id
     
 
 
