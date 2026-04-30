@@ -124,5 +124,9 @@ def create_or_update_playlist(songs, playlist_id, playlist_name, playlist_desc)
     return playlist_id
     
 
-songs = generate_song_list()
-create_or_update_playlist(songs, None, "Tomorrowland 2026 Artists Weekend 1", "Top songs from all the artists I could find on spotify")
+def main():
+    songs = generate_song_list()
+    create_or_update_playlist(songs, None, "Tomorrowland 2026 Artists Weekend 1", "Top songs from all the artists I could find on spotify")
+
+if __name__ == "__main__":
+    main()
