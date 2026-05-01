@@ -2,6 +2,11 @@ import os
 import requests
 import json
 import webbrowswer
+import crypto
+import base64
+import secrets
+import socket
+from urllib.parse import urlparse, parse_qs
 
 spotify_base_url = "https://api.spotify.com/v1"
 client_id = os.environ['SPOTIFY_CLIENT_ID']
@@ -25,28 +30,44 @@ def get_user_access_token():
     #for now this script is purely a single run kind of deal
     #Meaning this code is going to be generated fresh on every run 
     code_url = spotify_base_url + "/authorize?"
-    #TODO generate state
-    state = 123939
-    #TODO Validate the format on states. These are the states we need
-    scopes = ["playlist-modify-private", "playlist-modify-public"]
+    state = secrets.token_urlsafe(32)
+    scopes = "playlist-modify-private playlist-modify-public"
     code_url += "client_id=" + client_id + "&response_type=code&redirect_uri=" + redirect_uri + "&state=" + state + "&scope=" + scopes 
+
+    print("Opening spotify to request permissions")
     webbrowser.open(code_url)
     
-    #TODO now listen on localhost:3000, with timeout
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    s.bind(('localhost', 3000))
+
+    s.listen(5)
+    print("Waiting for callback response")
+
+    conn, addr = s.accept()
+    print("Received callback response")
+
+    data = conn.recv(4096)
+    callback_response = data.decode()
+    parsed_url = callback_response.split("\r\n")[0].split(" ")[1]
+    params = parse_qs(parsed_url.query)
+    response_state = params.get("state", [None])[0]
+    conn.sendall(b"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\nLogin complete. You can close this tab.")
+    onn.close()
 
     #once you get a response
-    callback_response = {}
-    if callback_response["state"] != state 
+    if response_state != state 
         #state changed, no good
         return
 
-    code = callback_response["code"]
+    code = params.get("code", [None])[0]
 
     token_url = spotify_base_url + "/api/token"
     token_body = {"grant_type": "authorization_code", "code": code, "redirect_uri": redirect_uri}
-    #TODO base 64 encode this
     client_creds = client_id + ":" + client_secret
-    token_headers = {"authorization": "Basic " + client_creds, "Content-Type": "application/x-www-form-urlencoded"}
+    creds_bytes = client_creds.encode("utf-8")
+    creds_base64 = base64.b64encode(creds_bytes)
+    token_headers = {"authorization": "Basic " + creds_base64, "Content-Type": "application/x-www-form-urlencoded"}
     auth_resp = requests.post(token_url, data = token_body, headers = token_headers)
 
     if auth_resp.status_code = 200:
