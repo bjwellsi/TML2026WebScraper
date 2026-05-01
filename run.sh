@@ -14,11 +14,11 @@ fi
 source $VENV_DIR/bin/activate
 
 # install deps ONLY if not already installed
-if ! python -c "import requests" &>/dev/null; then
+#if ! python -c "import requests" &>/dev/null; then
   echo "Installing dependencies..."
   pip install -r requirements.txt -q
-fi
+#fi
 
 # run script
-python interact.py
+python generate-playlist.py
 

@@ -1,12 +1,14 @@
 import os
 import requests
 import json
-import webbrowswer
-import crypto
+import webbrowser
 import base64
 import secrets
 import socket
 from urllib.parse import urlparse, parse_qs
+from dotenv import load_dotenv
+
+load_dotenv()
 
 spotify_base_url = "https://api.spotify.com/v1"
 client_id = os.environ['SPOTIFY_CLIENT_ID']
@@ -24,7 +26,8 @@ def get_generic_access_token():
     if auth_resp.status_code == 200:
         return auth_resp.text.access_token
 
-    else return None
+    else:
+        raise Exception("No access token returned - " + auth_resp)
 
 def get_user_access_token():
     #for now this script is purely a single run kind of deal
@@ -56,7 +59,7 @@ def get_user_access_token():
     onn.close()
 
     #once you get a response
-    if response_state != state 
+    if response_state != state:
         #state changed, no good
         return
 
@@ -70,11 +73,13 @@ def get_user_access_token():
     token_headers = {"authorization": "Basic " + creds_base64, "Content-Type": "application/x-www-form-urlencoded"}
     auth_resp = requests.post(token_url, data = token_body, headers = token_headers)
 
-    if auth_resp.status_code = 200:
+    if auth_resp.status_code == 200:
         #not storing anything other than access token rn (eg refresh token)
         # bc again, this is a stateless script
         access_token = auth_resp.data["access_token"] 
         return access_token
+    else:
+        raise Exception("No access token returned -" + auth_resp)
     return
 
     
@@ -83,8 +88,7 @@ def get_artist_top_song_ids(artist_id):
 
     url = spotify_base_url + "/artists?"
     resp = requests.get(url, headers = {"Authorization": "Bearer  " + access_token})
-    songs = None
-    if resp.status_code = 200:
+    if resp.status_code == 200:
         songs = resp.text
         song_ids = []
 
@@ -92,6 +96,8 @@ def get_artist_top_song_ids(artist_id):
             song_ids.append(song["id"])
 
         return song_ids
+    else:
+        raise Exception("No songs returned - " + resp)
     return
      
 def retrieve_artist_id_list():
@@ -117,17 +123,18 @@ def retrieve_artist_id_list():
         return artist_ids
     return
 
-def generate_song_list(playlist_id, playlist_name, playlist_desc):
-    if playlist_id is None and playlist_name is None:
-        return
+def generate_song_list():
 
     artists = retrieve_artist_id_list() 
     songs = []
-    for id in artists:
+    for artist_id in artists:
         artist_songs = get_artist_top_song_ids(artist_id)
         songs.extend(artist_songs)
 
-def create_or_update_playlist(songs, playlist_id, playlist_name, playlist_desc)
+def create_or_update_playlist(songs, playlist_id, playlist_name, playlist_desc):
+    if playlist_id is None and playlist_name is None:
+        return
+
     #get access token
     access_token = get_user_access_token()
 
@@ -135,12 +142,16 @@ def create_or_update_playlist(songs, playlist_id, playlist_name, playlist_desc)
         #make a new playlist
         req_url = spotify_base_url + "/me/playlists"
         resp = requests.post(req_url, data = {"name": playlist_name, "description": playlist_desc}, headers = {"Authorization": "Bearer " + access_token}) 
-        if resp.status_code = 200:
+        if resp.status_code == 200:
             playlist_id = resp.data["id"]
+        else:
+            raise Exception("Failed to create playlist - " + resp)
 
     append_url = spotify_base_url + "/playlists" + playlist_id + "/items"
     for song in songs:
         resp = requests.post(append_url + "?uris=spotify%3Atrack%3A" + song_id, data = {}, headers = {"Authorization": "Bearer " + access_token})
+        if resp.stats_code != 200:
+            raise Exception("Failed to insert song into playlist - " + resp)
 
     return playlist_id
     
