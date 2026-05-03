@@ -14,6 +14,7 @@ spotify_base_url = "https://api.spotify.com/v1"
 client_id = os.environ['SPOTIFY_CLIENT_ID']
 client_secret = os.environ['SPOTIFY_CLIENT_SECRET']
 redirect_uri = "http://127.0.0.1:3000/callback"
+spotify_playlist_id = os.environ['SPOTIFY_PLAYLIST_ID']
 
 def get_generic_access_token():
 
@@ -172,18 +173,22 @@ def create_or_update_playlist(songs, playlist_id, playlist_name, playlist_desc):
         req_url = spotify_base_url + "/me/playlists"
         req_body = data = {"name": playlist_name, "description": playlist_desc}
         req_headers = {"Authorization": "Bearer " + access_token}
-        resp = requests.post(req_url, data = req_body, headers = req_headers) 
+        resp = requests.post(req_url, json = req_body, headers = req_headers) 
+        print(req_body)
         if resp.status_code == 200:
             playlist_id = resp.json()["id"]
             print("Playlist created. ID: " + playlist_id)
         else:
             raise Exception("Failed to create playlist - " + json.dumps(resp.json()))
 
-    append_url = spotify_base_url + "/playlists" + playlist_id + "/items"
+    song_url = spotify_base_url + "/me/playlists/" + playlist_id + "/items"
+    print(song_url)
     for song in songs:
-        resp = requests.post(append_url + "?uris=spotify%3Atrack%3A" + song_id, data = {}, headers = {"Authorization": "Bearer " + access_token})
-        if resp.stats_code != 200:
-            raise Exception("Faileed to insert song into playlist - " + json.dumps(resp.json()))
+        song_body = {"uris": ["spotify:track:" + song]}
+        print(song_body)
+        resp = requests.post(song_url, json = song_body, headers = {"Authorization": "Bearer " + access_token, "Content-Type": "application/json"})
+        if resp.status_code != 200:
+            raise Exception("Failed to insert song into playlist - " + json.dumps(resp.json()))
 
     return playlist_id
     
@@ -192,7 +197,8 @@ def main():
     #print_songs_to_file(generate_song_list())
 
     songs = read_songs_from_file()
-    create_or_update_playlist(songs, None, "Tomorrowland 2026 Artists Weekend 1", "Top songs from all the artists I could find on spotify")
+    #create_or_update_playlist(songs, None, "Tomorrowland 2026 Artists Weekend 1", "Top songs from all the artists I could find on spotify")
+    create_or_update_playlist(songs, spotify_playlist_id, None, None)
 
 if __name__ == "__main__":
     main()
