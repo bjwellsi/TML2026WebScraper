@@ -181,14 +181,15 @@ def create_or_update_playlist(songs, playlist_id, playlist_name, playlist_desc):
         else:
             raise Exception("Failed to create playlist - " + json.dumps(resp.json()))
 
-    song_url = spotify_base_url + "/me/playlists/" + playlist_id + "/items"
-    print(song_url)
+    song_url = spotify_base_url + "/playlists/" + playlist_id + "/items"
+    song_headers = {"Authorization": "Bearer " + access_token, "Content-Type": "application/json"}
     for song in songs:
         song_body = {"uris": ["spotify:track:" + song]}
+        print(song_url)
         print(song_body)
-        resp = requests.post(song_url, json = song_body, headers = {"Authorization": "Bearer " + access_token, "Content-Type": "application/json"})
-        if resp.status_code != 200:
-            raise Exception("Failed to insert song into playlist - " + json.dumps(resp.json()))
+        print(song_headers)
+        resp = requests.post(song_url, json = song_body, headers = song_headers)
+        print("Server responded with " + str(resp.status_code) + ", " + json.dumps(resp.json()))
 
     return playlist_id
     
